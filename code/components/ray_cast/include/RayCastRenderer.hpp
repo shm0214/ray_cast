@@ -9,34 +9,30 @@
 
 #include "shaders/ShaderCreator.hpp"
 
-namespace RayCast
-{
-    using namespace NRenderer;
-    class RayCastRenderer
-    {
-    private:
-        SharedScene spScene;
-        Scene& scene;
-        RayCast::Camera camera;
+namespace RayCast {
+using namespace NRenderer;
+class RayCastRenderer {
+   private:
+    SharedScene spScene;
+    Scene& scene;
+    RayCast::Camera camera;
 
-        vector<SharedShader> shaderPrograms;
-    public:
-        RayCastRenderer(SharedScene spScene)
-            : spScene               (spScene)
-            , scene                 (*spScene)
-            , camera                (spScene->camera)
-        {}
-        ~RayCastRenderer() = default;
+    vector<SharedShader> shaderPrograms;
 
-        using RenderResult = tuple<RGBA*, unsigned int, unsigned int>;
-        RenderResult render();
-        void release(const RenderResult& r);
+   public:
+    RayCastRenderer(SharedScene spScene)
+        : spScene(spScene), scene(*spScene), camera(spScene->camera) {}
+    ~RayCastRenderer() = default;
 
-    private:
-        RGB gamma(const RGB& rgb);
-        RGB trace(const Ray& r);
-        HitRecord closestHit(const Ray& r);
-    };
-}
+    using RenderResult = tuple<RGBA*, unsigned int, unsigned int>;
+    RenderResult render();
+    void release(const RenderResult& r);
+
+   private:
+    RGB gamma(const RGB& rgb);
+    RGB trace(const Ray& r);
+    HitRecord closestHit(const Ray& r);
+};
+}  // namespace RayCast
 
 #endif

@@ -4,38 +4,32 @@
 
 #include "scene/Camera.hpp"
 
-namespace NRenderer
-{
-    struct RenderSettings
-    {
-        unsigned int width;
-        unsigned int height;
-        unsigned int depth;
-        unsigned int samplesPerPixel;
-        RenderSettings()
-            : width             (500)
-            , height            (500)
-            , depth             (4)
-            , samplesPerPixel   (16)
-        {}
-    };
-    struct AmbientSettings
-    {
-        enum Type
-        {
-            CONSTANT, ENVIROMENT_MAP
-        };
-        Type type = Type::CONSTANT;
-        RGB ambient = {0, 0, 0};
-        Handle mapTexture = {};
-    };
-    struct RenderSettingsManager
-    {
-        Camera camera = {};
-        RenderSettings renderSettings = {};
-        AmbientSettings ambientSettings = {};
-    };
-    
-}
+namespace NRenderer {
+struct RenderSettings {
+    unsigned int width;
+    unsigned int height;
+    unsigned int depth;
+    unsigned int samplesPerPixel;
+    float russianRoulette;
+    RenderSettings()
+        : width(500),
+          height(500),
+          depth(4),
+          samplesPerPixel(16),
+          russianRoulette(0.8) {}
+};
+struct AmbientSettings {
+    enum Type { CONSTANT, ENVIROMENT_MAP };
+    Type type = Type::CONSTANT;
+    RGB ambient = {0, 0, 0};
+    Handle mapTexture = {};
+};
+struct RenderSettingsManager {
+    Camera camera = {};
+    RenderSettings renderSettings = {};
+    AmbientSettings ambientSettings = {};
+};
+
+}  // namespace NRenderer
 
 #endif
