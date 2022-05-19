@@ -16,7 +16,10 @@ struct Mesh : public Entity {
     vector<Index> positionIndices;
     vector<Index> uvIndices;
     BVH* bvh;
-    Mesh() { type = EntityType::MESH; }
+    Mesh() {
+        type = EntityType::MESH;
+        material.setIndex(0);
+    }
 
     bool hasNormal() const { return normals.size() != 0; }
 
@@ -25,7 +28,7 @@ struct Mesh : public Entity {
     void calBoundingBox() {
         float min = numeric_limits<float>::lowest();
         float max = numeric_limits<float>::max();
-        Vec3 minV(min, min, min), maxV(max, max, max);
+        Vec3 minV(max, max, max), maxV(min, min, min);
         for (auto v : positions) {
             minV = minVec(v, minV);
             maxV = maxVec(v, maxV);
@@ -49,11 +52,14 @@ struct Mesh : public Entity {
         area = 0;
         // 先不管法向量了
         for (int i = 0; i < positionIndices.size(); i += 3) {
-            Vec3 v1 = positions[positionIndices[3 * i]];
-            Vec3 v2 = positions[positionIndices[3 * i + 1]];
-            Vec3 v3 = positions[positionIndices[3 * i + 2]];
-            area += glm::length(glm::cross(v2 - v1, v3 - v1)) / 2;
-            triangles.push_back(new Triangle(v1, v2, v3));
+            Vec3 v1 = positions[positionIndices[i]];
+            Vec3 v2 = positions[positionIndices[i + 1]];
+            Vec3 v3 = positions[positionIndices[i + 2]];
+            Vec3 normal = glm::cross(v2 - v1, v3 - v1);
+            area += glm::length(normal) / 2;
+            normal = glm::normalize(normal);
+            triangles.push_back(
+                new Triangle(v1, v2, v3, normal, material.index()));
         }
         bvh = new BVH(triangles);
     }

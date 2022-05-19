@@ -25,6 +25,10 @@ HitRecord xAreaLight(const Ray& ray,
                      const AreaLight& a,
                      float tMin = 0.f,
                      float tMax = FLOAT_INF);
+HitRecord xMesh(const Ray& ray,
+                const Mesh& a,
+                float tMin = 0.f,
+                float tMax = FLOAT_INF);
 bool xBounds(const Ray& ray, const Bounds& b);
 HitRecord closestHitObject(BVH* bvh, const Ray& ray);
 }  // namespace Intersection

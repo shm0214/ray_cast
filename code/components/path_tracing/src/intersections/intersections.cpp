@@ -149,6 +149,8 @@ HitRecord xBVH(const Ray& ray, BVHNode* node) {
                     ray, *(Triangle*)(node->object), 0.000001, FLOAT_INF);
                 break;
             case Entity::EntityType::MESH:
+                closestHit = Intersection::xMesh(ray, *(Mesh*)(node->object),
+                                                 0.000001, FLOAT_INF);
                 break;
         }
         return closestHit;
@@ -174,6 +176,8 @@ HitRecord xMesh(const Ray& ray, const Mesh& p, float tMin, float tMax) {
     HitRecord closestHit = nullopt;
     if (p.bvh)
         closestHit = closestHitObject(p.bvh, ray);
+    if (!closestHit || closestHit->t >= tMax || closestHit->t < tMin)
+        return getMissRecord();
     return closestHit;
 }
 

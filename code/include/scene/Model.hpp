@@ -71,8 +71,9 @@ struct Triangle : public Entity {
     Triangle() : v1(), v2(), v3(), normal(0, 0, 1) {
         type = EntityType::TRIANGLE;
     }
-    Triangle(Vec3 v1, Vec3 v2, Vec3 v3) : v1(v1), v2(v2), v3(v3) {
+    Triangle(Vec3 v1, Vec3 v2, Vec3 v3, Vec3 normal, int material) : v1(v1), v2(v2), v3(v3), normal(normal) {
         type = EntityType::TRIANGLE;
+        this->material.setIndex(material);
     };
     void calBoundingBox() { boundingBox = Bounds::Union(Bounds(v1, v2), v3); }
     void calArea() { area = glm::length(glm::cross(v2 - v1, v3 - v1)) / 2; }

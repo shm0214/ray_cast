@@ -8,6 +8,7 @@ void VertexTransformer::exec(SharedScene spScene) {
         Mat4x4 t{1};
         auto& model = spScene->models[node.model];
         t = glm::translate(t, model.translation);
+        t = glm::scale(t, model.scale);
         if (node.type == Node::Type::TRIANGLE) {
             for (int i = 0; i < 3; i++) {
                 auto& v = scene.triangleBuffer[node.entity].v[i];
@@ -19,7 +20,9 @@ void VertexTransformer::exec(SharedScene spScene) {
         } else if (node.type == Node::Type::PLANE) {
             auto& v = scene.planeBuffer[node.entity].position;
             v = t * Vec4{v, 1};
-        }
+        } else if (node.type == Node::Type::MESH)
+            for (auto& v : scene.meshBuffer[node.entity].positions)
+                v = t * Vec4{v, 1};
     }
 }
 }  // namespace PathTracer

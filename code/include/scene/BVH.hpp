@@ -102,7 +102,7 @@ class BVH {
                 node->area = node->left->area + node->right->area;
             } else {
                 auto middle = begin;
-                int dim, mid;
+                int dim = 0, mid = 0;
                 float cost = (numeric_limits<float>::max)();
                 float nums[] = {1.0 / 6, 2.0 / 6, 3.0 / 6, 4.0 / 6, 5.0 / 6};
                 for (int tmpDim = 0; tmpDim < 3; tmpDim++) {

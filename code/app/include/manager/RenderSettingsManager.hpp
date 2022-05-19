@@ -12,7 +12,7 @@ struct RenderSettings {
     unsigned int depth;
     unsigned int samplesPerPixel;
     float russianRoulette;
-    Acc acc = Acc::NONE;
+    Acc acc = Acc::BVH;
     RenderSettings()
         : width(500),
           height(500),
