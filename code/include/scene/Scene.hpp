@@ -2,9 +2,12 @@
 #ifndef __NR_SCENE_HPP__
 #define __NR_SCENE_HPP__
 
+#include "../app/include/manager/RenderSettingsManager.hpp"
+#include "BVH.hpp"
 #include "Camera.hpp"
 #include "Light.hpp"
 #include "Material.hpp"
+#include "Mesh.hpp"
 #include "Model.hpp"
 #include "Texture.hpp"
 
@@ -15,12 +18,14 @@ struct RenderOption {
     unsigned int depth;
     unsigned int samplesPerPixel;
     float russianRoulette;
+    RenderSettings::Acc acc;
     RenderOption()
         : width(500),
           height(500),
           depth(4),
           samplesPerPixel(16),
-          russianRoulette(0.8) {}
+          russianRoulette(0.8),
+          acc(RenderSettings::Acc::NONE) {}
 };
 
 struct Ambient {
@@ -55,6 +60,22 @@ struct Scene {
     vector<AreaLight> areaLightBuffer;
     vector<DirectionalLight> directionalLightBuffer;
     vector<SpotLight> spotLightBuffer;
+
+    BVH* bvh;
+    void buildBVH() {
+        vector<Entity*> primitives;
+        for (auto& s : sphereBuffer)
+            primitives.push_back(&s);
+        for (auto& t : triangleBuffer)
+            primitives.push_back(&t);
+        for (auto& p : planeBuffer)
+            primitives.push_back(&p);
+        for (auto& m : meshBuffer) {
+            m.buildBVH();
+            primitives.push_back(&m);
+        }
+        bvh = new BVH(primitives);
+    }
 };
 using SharedScene = shared_ptr<Scene>;
 }  // namespace NRenderer

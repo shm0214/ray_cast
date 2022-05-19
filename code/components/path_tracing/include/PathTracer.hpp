@@ -7,6 +7,7 @@
 #include "intersections/HitRecord.hpp"
 #include "scene/Scene.hpp"
 
+#include "../app/include/manager/RenderSettingsManager.hpp"
 #include "shaders/ShaderCreator.hpp"
 
 #include <tuple>
@@ -26,6 +27,7 @@ class PathTracerRenderer {
     unsigned int samples;
 
     float russianRoulette;
+    RenderSettings::Acc acc;
 
     using SCam = PathTracer::Camera;
     SCam camera;
@@ -40,6 +42,7 @@ class PathTracerRenderer {
         depth = scene.renderOption.depth;
         samples = scene.renderOption.samplesPerPixel;
         russianRoulette = scene.renderOption.russianRoulette;
+        acc = scene.renderOption.acc;
     }
     ~PathTracerRenderer() = default;
 

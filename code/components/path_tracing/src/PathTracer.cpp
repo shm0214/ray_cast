@@ -2,6 +2,7 @@
 
 #include "PathTracer.hpp"
 
+#include <chrono>
 #include "VertexTransformer.hpp"
 #include "intersections/intersections.hpp"
 
@@ -51,6 +52,17 @@ auto PathTracerRenderer::render() -> RenderResult {
     // 局部坐标转换成世界坐标
     VertexTransformer vertexTransformer{};
     vertexTransformer.exec(spScene);
+    if (acc == RenderSettings::Acc::BVH) {
+        getServer().logger.log("Building BVH...");
+        auto start = chrono::system_clock::now();
+        scene.buildBVH();
+        auto end = chrono::system_clock::now();
+        auto duration = duration_cast<chrono::microseconds>(end - start);
+        getServer().logger.log(std::format(
+            "Done. Time: {}s", double(duration.count()) *
+                                   chrono::microseconds::period::num /
+                                   chrono::microseconds::period::den));
+    }
 
     const auto taskNums = 8;
     thread t[taskNums];
@@ -72,28 +84,31 @@ void PathTracerRenderer::release(const RenderResult& r) {
 
 HitRecord PathTracerRenderer::closestHitObject(const Ray& r) {
     HitRecord closestHit = nullopt;
-    float closest = FLOAT_INF;
-    for (auto& s : scene.sphereBuffer) {
-        auto hitRecord = Intersection::xSphere(r, s, 0.000001, closest);
-        if (hitRecord && hitRecord->t < closest) {
-            closest = hitRecord->t;
-            closestHit = hitRecord;
+    if (acc == RenderSettings::Acc::NONE) {
+        float closest = FLOAT_INF;
+        for (auto& s : scene.sphereBuffer) {
+            auto hitRecord = Intersection::xSphere(r, s, 0.000001, closest);
+            if (hitRecord && hitRecord->t < closest) {
+                closest = hitRecord->t;
+                closestHit = hitRecord;
+            }
         }
-    }
-    for (auto& t : scene.triangleBuffer) {
-        auto hitRecord = Intersection::xTriangle(r, t, 0.000001, closest);
-        if (hitRecord && hitRecord->t < closest) {
-            closest = hitRecord->t;
-            closestHit = hitRecord;
+        for (auto& t : scene.triangleBuffer) {
+            auto hitRecord = Intersection::xTriangle(r, t, 0.000001, closest);
+            if (hitRecord && hitRecord->t < closest) {
+                closest = hitRecord->t;
+                closestHit = hitRecord;
+            }
         }
-    }
-    for (auto& p : scene.planeBuffer) {
-        auto hitRecord = Intersection::xPlane(r, p, 0.000001, closest);
-        if (hitRecord && hitRecord->t < closest) {
-            closest = hitRecord->t;
-            closestHit = hitRecord;
+        for (auto& p : scene.planeBuffer) {
+            auto hitRecord = Intersection::xPlane(r, p, 0.000001, closest);
+            if (hitRecord && hitRecord->t < closest) {
+                closest = hitRecord->t;
+                closestHit = hitRecord;
+            }
         }
-    }
+    } else if (acc == RenderSettings::Acc::BVH)
+        closestHit = Intersection::closestHitObject(scene.bvh, r);
     return closestHit;
 }
 

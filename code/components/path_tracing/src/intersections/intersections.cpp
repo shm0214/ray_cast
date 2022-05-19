@@ -1,4 +1,5 @@
 #include "intersections/intersections.hpp"
+#include <array>
 
 namespace PathTracer::Intersection {
 HitRecord xTriangle(const Ray& ray, const Triangle& t, float tMin, float tMax) {
@@ -110,4 +111,70 @@ HitRecord xAreaLight(const Ray& ray,
     }
     return getMissRecord();
 }
+
+bool xBound(const Ray& ray, const Bounds& b) {
+    Vec3 dir = ray.direction;
+    Vec3 dirInv = {1.0f / dir.x, 1.0f / dir.y, 1.0f / dir.z};
+    Vec3 tMin = (b.minPoint - ray.origin) * dirInv;
+    Vec3 tMax = (b.maxPoint - ray.origin) * dirInv;
+    if (dir.x < 0)
+        swap(tMin.x, tMax.x);
+    if (dir.y < 0)
+        swap(tMin.y, tMax.y);
+    if (dir.z < 0)
+        swap(tMin.z, tMax.z);
+    float enter = max({tMin.x, tMin.y, tMin.z});
+    float exit = min({tMax.x, tMax.y, tMax.z});
+    if (enter <= exit && exit > 0)
+        return true;
+    return false;
+}
+
+HitRecord xBVH(const Ray& ray, BVHNode* node) {
+    HitRecord closestHit = nullopt;
+    if (!xBound(ray, node->bound))
+        return closestHit;
+    if (!node->left && !node->right) {
+        switch (node->object->type) {
+            case Entity::EntityType::SPHERE:
+                closestHit = Intersection::xSphere(
+                    ray, *(Sphere*)(node->object), 0.000001, FLOAT_INF);
+                break;
+            case Entity::EntityType::PLANE:
+                closestHit = Intersection::xPlane(ray, *(Plane*)(node->object),
+                                                  0.000001, FLOAT_INF);
+                break;
+            case Entity::EntityType::TRIANGLE:
+                closestHit = Intersection::xTriangle(
+                    ray, *(Triangle*)(node->object), 0.000001, FLOAT_INF);
+                break;
+            case Entity::EntityType::MESH:
+                break;
+        }
+        return closestHit;
+    }
+    auto temp1 = xBVH(ray, node->left);
+    auto temp2 = xBVH(ray, node->right);
+    if (!temp1)
+        return temp2;
+    if (!temp2)
+        return temp1;
+    return temp1->t < temp2->t ? temp1 : temp2;
+}
+
+HitRecord closestHitObject(BVH* bvh, const Ray& ray) {
+    HitRecord closestHit = nullopt;
+    if (!bvh->root)
+        return closestHit;
+    closestHit = xBVH(ray, bvh->root);
+    return closestHit;
+}
+
+HitRecord xMesh(const Ray& ray, const Mesh& p, float tMin, float tMax) {
+    HitRecord closestHit = nullopt;
+    if (p.bvh)
+        closestHit = closestHitObject(p.bvh, ray);
+    return closestHit;
+}
+
 }  // namespace PathTracer::Intersection

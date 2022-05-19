@@ -1,4 +1,5 @@
 #include "Server/Screen.hpp"
+#include <direct.h>
 #include <cstdlib>
 #include <fstream>
 
@@ -61,6 +62,13 @@ void Screen::set(RGBA* pixels, int width, int height) {
     mtx.unlock();
 }
 
+std::string current_working_directory() {
+    char buff[250];
+    _getcwd(buff, 250);
+    std::string current_working_directory(buff);
+    return current_working_directory;
+}
+
 void Screen::saveBMP() {
     int l = (width * 3 + 3) / 4 * 4;
     char head[] = "BM";
@@ -87,10 +95,10 @@ void Screen::saveBMP() {
     std::chrono::zoned_time now{"Asia/Shanghai",
                                 std::chrono::system_clock::now()};
     auto today = std::chrono::floor<std::chrono::days>(now.get_local_time());
-    std::string filename =
-        std::format("../code/pic/{:%Y_%m_%d}_{:%H_%M_%S}.bmp",
-                    std::chrono::year_month_day{today},
-                    std::chrono::hh_mm_ss{now.get_local_time() - today});
+    std::string filename = std::format(
+        "E:/projects/nrenderer/code/pic/{:%Y_%m_%d}_{:%H_%M_%S}.bmp",
+        std::chrono::year_month_day{today},
+        std::chrono::hh_mm_ss{now.get_local_time() - today});
     std::ofstream fp(filename, ios::out | ios::binary);
     fp.write((char*)head, 2);
     fp.write((char*)bmi, sizeof(bmi));

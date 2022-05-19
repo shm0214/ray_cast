@@ -8,6 +8,7 @@ void SceneBuilder::buildRenderOption() {
     ro.width = renderSettings.width;
     ro.height = renderSettings.height;
     ro.russianRoulette = renderSettings.russianRoulette;
+    ro.acc = renderSettings.acc;
     this->scene->renderOption = ro;
 }
 
@@ -102,6 +103,7 @@ SharedScene SceneBuilder::build() {
     this->buildCamera();
     this->buildBuffer();
     this->buildAmbient();
+    // this->scene->buildBVH();
     if (success)
         return this->scene;
     else

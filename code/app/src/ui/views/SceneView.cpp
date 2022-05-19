@@ -49,8 +49,24 @@ void SceneView::renderSetting() {
                        "%u");
     ImGui::InputScalar("Sample Nums", ImGuiDataType_U32, &rs.samplesPerPixel,
                        &intStep, NULL, "%u");
-    ImGui::InputScalar("RussianRoulette", ImGuiDataType_Float,
-                       &rs.russianRoulette, &floatStep, NULL);
+    if (currComponentSelected == 0) {
+        ImGui::InputScalar("RussianRoulette", ImGuiDataType_Float,
+                           &rs.russianRoulette, &floatStep, NULL);
+        const string acc[] = {"None", "BVH"};
+        int curr = rs.acc == RenderSettings::Acc::NONE ? 0 : 1;
+        if (ImGui::BeginCombo("Acc##RenderSettings", acc[curr].c_str())) {
+            for (int i = 0; i < 2; i++) {
+                bool selected = curr == i;
+                if (ImGui::Selectable((acc[i] + "##RenderAccItem").c_str(),
+                                      &selected)) {
+                    rs.acc = i == 0 ? RenderSettings::Acc::NONE
+                                    : RenderSettings::Acc::BVH;
+                    curr = i;
+                }
+            }
+            ImGui::EndCombo();
+        }
+    }
 }
 void SceneView::ambientSetting() {
     auto& as = manager.renderSettingsManager.ambientSettings;

@@ -1,0 +1,1 @@
+#define TEST(x) (b1.maxPoint.x >= b2.minPoint.x) && (b1.minPoint.x <= b2.maxPoint.x)
