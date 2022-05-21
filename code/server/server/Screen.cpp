@@ -2,6 +2,7 @@
 #include <direct.h>
 #include <cstdlib>
 #include <fstream>
+#include <chrono>
 
 namespace NRenderer {
 Screen::Screen() : width(500), height(500), updated(false), mtx() {
