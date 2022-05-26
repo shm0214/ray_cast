@@ -55,6 +55,7 @@ class PathTracerRenderer {
 
     RGB gamma(const RGB& rgb);
     RGB trace(const Ray& ray);
+    RGB getAmbientColor(const Ray& ray);
     HitRecord closestHitObject(const Ray& r);
     tuple<float, Vec3> closestHitLight(const Ray& r);
     HitRecord sampleLight() const;

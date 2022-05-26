@@ -143,6 +143,7 @@ HitRecord PathTracerRenderer::sampleLight() const {
                                 {});
         }
     }
+    return nullopt;
 }
 
 inline void print(const std::string str, const Vec3& v) {
@@ -161,33 +162,44 @@ inline bool testEqual(const float& a, const float& b, float epsilon = 0.0005f) {
     return fabs(a - b) < epsilon;
 }
 
+RGB PathTracerRenderer::getAmbientColor(const Ray& r) {
+    if (scene.ambient.type == Ambient::Type::CONSTANT)
+        return scene.ambient.constant;
+    else if (scene.ambient.type == Ambient::Type::ENVIROMENT_MAP) {
+        return Vec3{0};
+    }
+}
+
 RGB PathTracerRenderer::trace(const Ray& r) {
     auto hitObject = closestHitObject(r);
     auto [t, emitted] = closestHitLight(r);
     // hit object
     if (hitObject && hitObject->t < t) {
-        auto intersection = sampleLight().value();
-        Vec3 lightPoint = intersection.hitPoint;
-        float lightPdf = intersection.pdf;
-        auto hitPoint = hitObject.value().hitPoint;
-        Vec3 ws = glm::normalize(lightPoint - hitPoint);
-        Vec3 NN = intersection.normal;
-        Vec3 N = hitObject.value().normal;
+        auto hit = sampleLight();
         Vec3 L_dir = {};
-        Vec3 wo = -r.direction;
-        auto temp = closestHitObject(Ray(hitPoint, ws));
-        auto [t, radiance] = closestHitLight(Ray(hitPoint, ws));
-        auto testPoint = hitPoint + t * ws;
         auto mtlHandle = hitObject->material;
-        float ws_dot_NN = glm::dot(-ws, NN);
-        if ((!temp.has_value() || temp->t > t || testEqual(temp->t, t)) &&
-            testEqual(testPoint, lightPoint)) {
-            L_dir =
-                radiance * shaderPrograms[mtlHandle.index()]->eval(wo, ws, N) *
-                glm::dot(ws, N) * fabs(ws_dot_NN) /
-                (float)pow(glm::length(lightPoint - hitPoint), 2) / lightPdf;
+        if (hit) {
+            auto& intersection = hit.value();
+            Vec3 lightPoint = intersection.hitPoint;
+            float lightPdf = intersection.pdf;
+            auto hitPoint = hitObject.value().hitPoint;
+            Vec3 ws = glm::normalize(lightPoint - hitPoint);
+            Vec3 NN = intersection.normal;
+            Vec3 N = hitObject.value().normal;
+            Vec3 wo = -r.direction;
+            auto temp = closestHitObject(Ray(hitPoint, ws));
+            auto [t, radiance] = closestHitLight(Ray(hitPoint, ws));
+            auto testPoint = hitPoint + t * ws;
+            float ws_dot_NN = glm::dot(-ws, NN);
+            if ((!temp.has_value() || temp->t > t || testEqual(temp->t, t)) &&
+                testEqual(testPoint, lightPoint) && ws_dot_NN > 0) {
+                L_dir = radiance *
+                        shaderPrograms[mtlHandle.index()]->eval(wo, ws, N) *
+                        glm::dot(ws, N) * ws_dot_NN /
+                        (float)pow(glm::length(lightPoint - hitPoint), 2) /
+                        lightPdf;
+            }
         }
-
         Vec3 L_indir = {};
         float russianRoulette = scene.renderOption.russianRoulette;
         if (defaultSamplerInstance<UniformSampler>().sample1d() <
