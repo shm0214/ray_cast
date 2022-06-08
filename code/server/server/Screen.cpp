@@ -1,6 +1,7 @@
 #include "Server/Screen.hpp"
 #include <direct.h>
 #include <cstdlib>
+#include <chrono>
 #include <fstream>
 
 namespace NRenderer {
