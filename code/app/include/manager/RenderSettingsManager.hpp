@@ -21,7 +21,7 @@ struct RenderSettings {
           russianRoulette(0.8) {}
 };
 struct AmbientSettings {
-    enum class Type { CONSTANT, ENVIROMENT_MAP };
+    enum class Type { CONSTANT, ENVIRONMENT_MAP };
     Type type = Type::CONSTANT;
     RGB ambient = {0, 0, 0};
     Handle mapTexture = {};

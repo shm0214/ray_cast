@@ -6,9 +6,8 @@
 #include "VertexTransformer.hpp"
 #include "intersections/intersections.hpp"
 
-#include "glm/gtc/matrix_transform.hpp"
-
 #include <string>
+#include "glm/gtc/matrix_transform.hpp"
 
 namespace PathTracer {
 RGB PathTracerRenderer::gamma(const RGB& rgb) {
@@ -165,7 +164,7 @@ inline bool testEqual(const float& a, const float& b, float epsilon = 0.0005f) {
 RGB PathTracerRenderer::getAmbientColor(const Ray& r) {
     if (scene.ambient.type == Ambient::Type::CONSTANT)
         return scene.ambient.constant;
-    else if (scene.ambient.type == Ambient::Type::ENVIROMENT_MAP) {
+    else if (scene.ambient.type == Ambient::Type::ENVIRONMENT_MAP) {
         return Vec3{0};
     }
 }
@@ -177,50 +176,70 @@ RGB PathTracerRenderer::trace(const Ray& r) {
     if (hitObject && hitObject->t < t) {
         auto hit = sampleLight();
         Vec3 L_dir = {};
-        auto mtlHandle = hitObject->material;
-        if (hit) {
-            auto& intersection = hit.value();
-            Vec3 lightPoint = intersection.hitPoint;
-            float lightPdf = intersection.pdf;
-            auto hitPoint = hitObject.value().hitPoint;
-            Vec3 ws = glm::normalize(lightPoint - hitPoint);
-            Vec3 NN = intersection.normal;
-            Vec3 N = hitObject.value().normal;
-            Vec3 wo = -r.direction;
-            auto temp = closestHitObject(Ray(hitPoint, ws));
-            auto [t, radiance] = closestHitLight(Ray(hitPoint, ws));
-            auto testPoint = hitPoint + t * ws;
-            float ws_dot_NN = glm::dot(-ws, NN);
-            if ((!temp.has_value() || temp->t > t || testEqual(temp->t, t)) &&
-                testEqual(testPoint, lightPoint) && ws_dot_NN > 0) {
-                L_dir = radiance *
-                        shaderPrograms[mtlHandle.index()]->eval(wo, ws, N) *
-                        glm::dot(ws, N) * ws_dot_NN /
-                        (float)pow(glm::length(lightPoint - hitPoint), 2) /
-                        lightPdf;
-            }
-        }
         Vec3 L_indir = {};
-        float russianRoulette = scene.renderOption.russianRoulette;
-        if (defaultSamplerInstance<UniformSampler>().sample1d() <
-            russianRoulette) {
-            auto scattered = shaderPrograms[mtlHandle.index()]->shade(
-                r, hitObject->hitPoint, hitObject->normal);
-            auto scatteredRay = scattered.ray;
-            auto temp = closestHitObject(scatteredRay);
-            auto [t, radiance] = closestHitLight(scatteredRay);
-            if (temp && temp->t < t && !testEqual(temp->t, t)) {
+        auto mtlHandle = hitObject->material;
+        switch (scene.materials[mtlHandle.index()].type) {
+            case 0: {
+                if (hit) {
+                    auto& intersection = hit.value();
+                    Vec3 lightPoint = intersection.hitPoint;
+                    float lightPdf = intersection.pdf;
+                    auto hitPoint = hitObject.value().hitPoint;
+                    Vec3 ws = glm::normalize(lightPoint - hitPoint);
+                    Vec3 NN = intersection.normal;
+                    Vec3 N = hitObject.value().normal;
+                    Vec3 wo = -r.direction;
+                    auto temp = closestHitObject(Ray(hitPoint, ws));
+                    auto [t, radiance] = closestHitLight(Ray(hitPoint, ws));
+                    auto testPoint = hitPoint + t * ws;
+                    float ws_dot_NN = glm::dot(-ws, NN);
+                    if ((!temp.has_value() || temp->t > t ||
+                         testEqual(temp->t, t)) &&
+                        testEqual(testPoint, lightPoint) && ws_dot_NN > 0) {
+                        L_dir =
+                            radiance *
+                            shaderPrograms[mtlHandle.index()]->eval(wo, ws, N) *
+                            glm::dot(ws, N) * ws_dot_NN /
+                            (float)pow(glm::length(lightPoint - hitPoint), 2) /
+                            lightPdf;
+                    }
+                }
+                float russianRoulette = scene.renderOption.russianRoulette;
+                if (defaultSamplerInstance<UniformSampler>().sample1d() <
+                    russianRoulette) {
+                    auto scattered = shaderPrograms[mtlHandle.index()]->shade(
+                        r, hitObject->hitPoint, hitObject->normal);
+                    auto scatteredRay = scattered.ray;
+                    auto temp = closestHitObject(scatteredRay);
+                    auto [t, radiance] = closestHitLight(scatteredRay);
+                    if (temp && temp->t < t && !testEqual(temp->t, t)) {
+                        auto attenuation = scattered.attenuation;
+                        auto emitted = scattered.emitted;
+                        float n_dot_in =
+                            glm::dot(hitObject->normal, scatteredRay.direction);
+                        float pdf = scattered.pdf;
+                        auto next = trace(Ray(scatteredRay));
+                        L_indir = clamp(next) * attenuation * n_dot_in / pdf /
+                                  russianRoulette;
+                    }
+                }
+                return L_indir + L_dir;
+            }
+            case 2: {
+                auto scattered = shaderPrograms[mtlHandle.index()]->shade(
+                    r, hitObject->hitPoint, hitObject->normal);
+                auto ray = scattered.ray;
                 auto attenuation = scattered.attenuation;
-                auto emitted = scattered.emitted;
-                float n_dot_in =
-                    glm::dot(hitObject->normal, scatteredRay.direction);
-                float pdf = scattered.pdf;
-                auto next = trace(Ray(scatteredRay));
-                L_indir = clamp(next) * attenuation * n_dot_in / pdf /
-                          russianRoulette;
+                if (defaultSamplerInstance<UniformSampler>().sample1d() <
+                    russianRoulette) {
+                    //cout << 2 << endl;
+                    auto res = attenuation * trace(ray) / russianRoulette;
+                    //print("1", res);
+                    return res;
+                }
             }
         }
-        return L_indir + L_dir;
+        return {};
     } else if (t != FLOAT_INF) {
         return emitted;
     } else {

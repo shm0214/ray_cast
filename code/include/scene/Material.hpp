@@ -127,26 +127,23 @@ struct Material {
 using SharedMaterial = shared_ptr<Material>;
 }  // namespace NRenderer
 
-float SchlickFresnel(float u) {
-    float m = clamp(1 - u, 0, 1);
-    float m2 = m * m;
-    return m2 * m2 * m;  // pow(m,5)
-}
+// float SchlickFresnel(float u) {
+//     float m = clamp(1 - u, 0, 1);
+//     float m2 = m * m;
+//     return m2 * m2 * m;  // pow(m,5)
+// }
 
+// Vec3 BRDF_Evaluate(Vec3 V, Vec3 N, Vec3 L, Material material) {
+//     Vec3 Cdlin = material.baseColor;
 
+//     // Âþ·´Éä
+//     float Fd90 = 0.5 + 2.0 * LdotH * LdotH * material.roughness;
+//     float FL = SchlickFresnel(NdotL);
+//     float FV = SchlickFresnel(NdotV);
+//     float Fd = mix(1.0, Fd90, FL) * mix(1.0, Fd90, FV);
 
-    Vec3
-BRDF_Evaluate(Vec3 V, Vec3 N, Vec3 L, Material material) {
-Vec3 Cdlin = material.baseColor;
-
-// Âþ·´Éä
-float Fd90 = 0.5 + 2.0 * LdotH * LdotH * material.roughness;
-float FL = SchlickFresnel(NdotL);
-float FV = SchlickFresnel(NdotV);
-float Fd = mix(1.0, Fd90, FL) * mix(1.0, Fd90, FV);
-
-vec3 diffuse = Fd * Cdlin / PI;
-return diffuse * (1.0 - material.metallic);
-}
+//     vec3 diffuse = Fd * Cdlin / PI;
+//     return diffuse * (1.0 - material.metallic);
+// }
 
 #endif

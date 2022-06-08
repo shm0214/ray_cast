@@ -45,7 +45,6 @@ using RGBA = Vec4;
 // r,g,b's range: 0 - 255
 using RGBi = glm::u8vec3;
 using RGBAi = glm::u8vec4;
-
 inline std::ostream& operator<<(std::ostream& out, const Vec3& v) {
     return out << "[ " << v.x << ", " << v.y << ", " << v.z << " ]";
 }
@@ -93,6 +92,10 @@ inline RGBi RGB2RGBi(const RGB& rgb) {
 inline RGBAi RGBA2RGBAi(const RGBA& rgba) {
     return RGBAi{clamp(rgba.r) * float(255), clamp(rgba.g) * float(255),
                  clamp(rgba.b) * float(255), clamp(rgba.a) * float(255)};
+}
+
+inline float distance2(const Vec3& v) {
+    return v.x * v.x + v.y * v.y + v.z * v.z;
 }
 }  // namespace NRenderer
 

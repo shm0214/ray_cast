@@ -29,7 +29,7 @@ struct RenderOption {
 };
 
 struct Ambient {
-    enum class Type { CONSTANT, ENVIROMENT_MAP };
+    enum class Type { CONSTANT, ENVIRONMENT_MAP };
     Type type;
     Vec3 constant = {};
     Handle environmentMap = {};

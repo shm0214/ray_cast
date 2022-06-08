@@ -93,7 +93,7 @@ void SceneBuilder::buildAmbient() {
     if (ambientSettings.type == AmbientSettings::Type::CONSTANT) {
         this->scene->ambient.type = Ambient::Type::CONSTANT;
     } else {
-        this->scene->ambient.type = Ambient::Type::ENVIROMENT_MAP;
+        this->scene->ambient.type = Ambient::Type::ENVIRONMENT_MAP;
     }
 }
 

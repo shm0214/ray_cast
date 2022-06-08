@@ -6,7 +6,7 @@ SceneView::SceneView(const Vec2& position,
                      const Vec2& size,
                      UIContext& uiContext,
                      Manager& manager)
-    : View(position, size, uiContext, manager), currComponentSelected(0) {}
+    : View(position, size, uiContext, manager), currComponentSelected(1) {}
 
 void SceneView::drawBeginWindow() {
     ImGui::Begin("Render Settings", nullptr, windowFlag);
@@ -49,7 +49,7 @@ void SceneView::renderSetting() {
                        "%u");
     ImGui::InputScalar("Sample Nums", ImGuiDataType_U32, &rs.samplesPerPixel,
                        &intStep, NULL, "%u");
-    if (currComponentSelected == 0) {
+    if (currComponentSelected == 1) {
         ImGui::InputScalar("RussianRoulette", ImGuiDataType_Float,
                            &rs.russianRoulette, &floatStep, NULL);
         const string acc[] = {"None", "BVH"};
@@ -79,7 +79,7 @@ void SceneView::ambientSetting() {
             if (ImGui::Selectable((typeStr[i] + "##AmbientTypeItem").c_str(),
                                   &selected)) {
                 as.type = i == 0 ? AmbientSettings::Type::CONSTANT
-                                 : AmbientSettings::Type::ENVIROMENT_MAP;
+                                 : AmbientSettings::Type::ENVIRONMENT_MAP;
                 curr = i;
             }
         }
