@@ -225,16 +225,18 @@ RGB PathTracerRenderer::trace(const Ray& r) {
                 }
                 return L_indir + L_dir;
             }
-            case 2: {
+            case 2:
+            case 3: {
                 auto scattered = shaderPrograms[mtlHandle.index()]->shade(
                     r, hitObject->hitPoint, hitObject->normal);
                 auto ray = scattered.ray;
                 auto attenuation = scattered.attenuation;
+                float n_dot_in = glm::dot(hitObject->normal, ray.direction);
+                //print("n_dot_in", n_dot_in);
                 if (defaultSamplerInstance<UniformSampler>().sample1d() <
                     russianRoulette) {
-                    //cout << 2 << endl;
-                    auto res = attenuation * trace(ray) / russianRoulette;
-                    //print("1", res);
+                    auto res = attenuation * trace(ray) * fabs(n_dot_in) /
+                               russianRoulette;
                     return res;
                 }
             }

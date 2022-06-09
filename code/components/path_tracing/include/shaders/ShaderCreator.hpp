@@ -5,6 +5,7 @@
 #include "Dielectric.hpp"
 #include "Lambertian.hpp"
 #include "Shader.hpp"
+#include "metal.hpp"
 
 namespace PathTracer {
 class ShaderCreator {
@@ -18,6 +19,9 @@ class ShaderCreator {
                 break;
             case 2:
                 shader = make_shared<Dielectric>(material, t);
+                break;
+            case 3:
+                shader = make_shared<metal>(material, t);
                 break;
             default:
                 shader = make_shared<Lambertian>(material, t);
