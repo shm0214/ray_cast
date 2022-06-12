@@ -1,23 +1,21 @@
-#include "shaders/metal.hpp"
+#include "shaders/Lambertian.hpp"
 #include "samplers/SamplerInstance.hpp"
 
 #include "Onb.hpp"
 
-namespace PathTracer {
-
-metal::metal(Material& material, vector<Texture>& textures)
+namespace PhotonMapping {
+Lambertian::Lambertian(Material& material, vector<Texture>& textures)
     : Shader(material, textures) {
-    auto color = material.getProperty<Property::Wrapper::RGBType>("reflect");
-    if (color)
-        albedo = (*color).value;
+    auto diffuseColor =
+        material.getProperty<Property::Wrapper::RGBType>("diffuseColor");
+    if (diffuseColor)
+        albedo = (*diffuseColor).value;
     else
-        albedo = {0.542, 0.497, 0.449};
-
-
+        albedo = {1, 1, 1};
 }
-Scattered metal::shade(const Ray& ray,
-                       const Vec3& hitPoint,
-                       const Vec3& normal) const {
+Scattered Lambertian::shade(const Ray& ray,
+                            const Vec3& hitPoint,
+                            const Vec3& normal) const {
     Vec3 origin = hitPoint;
     Vec3 random = defaultSamplerInstance<HemiSphere>().sample3d();
     // if (normal == Vec3{0, 0, 1}) {
@@ -35,20 +33,24 @@ Scattered metal::shade(const Ray& ray,
     // }
     // direction = glm::normalize(direction);
 
-    /* Onb onb{normal};
-    Vec3 direction = glm::normalize(onb.local(random));*/
-    //反射光线的方向等于入射光线方向+2b
-    Vec3 direction =
-        ray.direction - 2 * glm::dot(ray.direction, normal) * normal;
-    float pdf = 1;
-    auto attenuation = albedo;
+    Onb onb{normal};
+    Vec3 direction = glm::normalize(onb.local(random));
+
+    float pdf = 1 / (2 * PI);
+
+    auto attenuation = albedo / PI;
+
     return {Ray{origin, direction}, attenuation, Vec3{0}, pdf};
 }
-Vec3 metal::eval(const Vec3& in, const Vec3& out, const Vec3& normal) const {
+
+Vec3 Lambertian::eval(const Vec3& in,
+                      const Vec3& out,
+                      const Vec3& normal) const {
     float cos = glm::dot(normal, out);
     if (cos > 0.0f)
-        return albedo;
+        return albedo / PI;
     else
         return {};
 }
-}  // namespace PathTracer
+
+}  // namespace PhotonMapping

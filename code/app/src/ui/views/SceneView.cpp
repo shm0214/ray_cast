@@ -49,7 +49,7 @@ void SceneView::renderSetting() {
                        "%u");
     ImGui::InputScalar("Sample Nums", ImGuiDataType_U32, &rs.samplesPerPixel,
                        &intStep, NULL, "%u");
-    if (currComponentSelected == 1) {
+    if (currComponentSelected == 1 || currComponentSelected == 0) {
         ImGui::InputScalar("RussianRoulette", ImGuiDataType_Float,
                            &rs.russianRoulette, &floatStep, NULL);
         const string acc[] = {"None", "BVH"};

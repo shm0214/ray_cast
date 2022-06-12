@@ -13,7 +13,7 @@ struct AssetManager {
 
     void init() {
         FileFetcher ff;
-        string path = "../../../../resource/pt_glass.scn";
+        string path = "../../../../resource/path_tracing_cornel.scn";
         auto importer = SceneImporterFactory::instance().importer(
             File::getFileExtension(path));
         bool success = importer->import(asset, path);
@@ -22,18 +22,18 @@ struct AssetManager {
         } else {
             getServer().logger.success("成功导入:" + path);
         }
-    //     path = "../../../../resource/bunny.obj";
-    //     importer = SceneImporterFactory::instance().importer(
-    //         File::getFileExtension(path));
-    //     success = importer->import(asset, path);
-    //     if (!success) {
-    //         getServer().logger.error(importer->getErrorInfo());
-    //     } else {
-    //         getServer().logger.success("成功导入:" + path);
-    //     }
-    //     asset.modelItems.back().model->translation = {-50, -300, 978};
-    //     asset.modelItems.back().model->scale = {1000, 1000, 1000};
-    //     asset.modelItems.back().name = "bunny";
+        // path = "../../../../resource/bunny.obj";
+        // importer = SceneImporterFactory::instance().importer(
+        //     File::getFileExtension(path));
+        // success = importer->import(asset, path);
+        // if (!success) {
+        //     getServer().logger.error(importer->getErrorInfo());
+        // } else {
+        //     getServer().logger.success("成功导入:" + path);
+        // }
+        // asset.modelItems.back().model->translation = {-50, -300, 978};
+        // asset.modelItems.back().model->scale = {1000, 1000, 1000};
+        // asset.modelItems.back().name = "bunny";
     }
 
     void importScene() {

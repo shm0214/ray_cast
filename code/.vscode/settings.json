@@ -1,0 +1,8 @@
+{
+    "makefile.extensionOutputFolder": "./.vscode",
+    "files.associations": {
+        "*.m": "matlab",
+        "*.html": "html",
+        "optional": "cpp"
+    }
+}

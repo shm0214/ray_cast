@@ -1,7 +1,7 @@
 #include "intersections/intersections.hpp"
 #include <array>
 
-namespace PathTracer::Intersection {
+namespace PhotonMapping::Intersection {
 HitRecord xTriangle(const Ray& ray, const Triangle& t, float tMin, float tMax) {
     const auto& v1 = t.v1;
     const auto& v2 = t.v2;
@@ -181,4 +181,4 @@ HitRecord xMesh(const Ray& ray, const Mesh& p, float tMin, float tMax) {
     return closestHit;
 }
 
-}  // namespace PathTracer::Intersection
+}  // namespace PhotonMapping::Intersection

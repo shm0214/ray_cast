@@ -3,7 +3,7 @@
 
 #include "Onb.hpp"
 
-namespace PathTracer {
+namespace PhotonMapping {
 
 metal::metal(Material& material, vector<Texture>& textures)
     : Shader(material, textures) {
@@ -11,15 +11,12 @@ metal::metal(Material& material, vector<Texture>& textures)
     if (color)
         albedo = (*color).value;
     else
-        albedo = {0.542, 0.497, 0.449};
-
-
+        albedo = {0.8, 0.8, 0.8};
 }
 Scattered metal::shade(const Ray& ray,
                        const Vec3& hitPoint,
                        const Vec3& normal) const {
     Vec3 origin = hitPoint;
-    Vec3 random = defaultSamplerInstance<HemiSphere>().sample3d();
     // if (normal == Vec3{0, 0, 1}) {
     //     direction = random;
     // }
@@ -51,4 +48,4 @@ Vec3 metal::eval(const Vec3& in, const Vec3& out, const Vec3& normal) const {
     else
         return {};
 }
-}  // namespace PathTracer
+}  // namespace PhotonMapping

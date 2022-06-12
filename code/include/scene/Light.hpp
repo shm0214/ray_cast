@@ -49,6 +49,7 @@ struct AreaLight {
         }
         return normal;
     }
+    float getMean() { return (radiance.x + radiance.y + radiance.z) / 30; }
 };
 SHARE(AreaLight);
 

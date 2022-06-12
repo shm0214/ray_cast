@@ -1,7 +1,7 @@
 #include "shaders/Dielectric.hpp"
 #include "samplers/SamplerInstance.hpp"
 
-namespace PathTracer {
+namespace PhotonMapping {
 Dielectric::Dielectric(Material& material, vector<Texture>& textures)
     : Shader(material, textures) {
     absorbed =
@@ -28,8 +28,7 @@ Vec3 Dielectric::scatter(const Ray& ray,
     } else {
         Vec3 r1 = ratio * (ray.direction + cos * n);
         Vec3 r2 = -sqrt(1 - distance2(r1)) * n;
-        Vec3 r = r1 + r2;
-        return r;
+        return r1 + r2;
     }
 }
 Scattered Dielectric::shade(const Ray& ray,
@@ -51,4 +50,4 @@ Vec3 Dielectric::eval(const Vec3& in,
                       const Vec3& normal) const {
     return {};
 }
-}  // namespace PathTracer
+}  // namespace PhotonMapping

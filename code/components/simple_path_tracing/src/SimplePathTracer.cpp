@@ -112,7 +112,7 @@ tuple<float, Vec3> SimplePathTracerRenderer::closestHitLight(const Ray& r) {
 
 RGB SimplePathTracerRenderer::trace(const Ray& r, int currDepth) {
     if (currDepth == depth)
-        return scene.ambient.constant;
+        return Vec3{0};
     auto hitObject = closestHitObject(r);
     auto [t, emitted] = closestHitLight(r);
     // hit object
@@ -139,7 +139,7 @@ RGB SimplePathTracerRenderer::trace(const Ray& r, int currDepth) {
     else if (t != FLOAT_INF) {
         return emitted;
     } else {
-        return Vec3{0};
+        return scene.ambient.constant;
     }
 }
 }  // namespace SimplePathTracer

@@ -119,7 +119,7 @@ class BVH {
                                 right, primitives[i]->getBoundingBox());
                         }
                         float tmpCost = (tmpMid * left.getArea() +
-                                         (size - tmpMid) * right.getArea()) /
+                                            (size - tmpMid) * right.getArea()) /
                                         bound.getArea();
                         if (tmpCost < cost) {
                             cost = tmpCost;

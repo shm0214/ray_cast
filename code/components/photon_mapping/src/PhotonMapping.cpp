@@ -1,27 +1,31 @@
 #include "server/Server.hpp"
 
-#include "PathTracer.hpp"
+#include "PhotonMapping.hpp"
 
 #include <chrono>
 #include "VertexTransformer.hpp"
 #include "intersections/intersections.hpp"
 
-#include <string>
+#include "Onb.hpp"
 #include "glm/gtc/matrix_transform.hpp"
 
-namespace PathTracer {
-RGB PathTracerRenderer::gamma(const RGB& rgb) {
+#include "Photon.hpp"
+
+#include <string>
+
+namespace PhotonMapping {
+RGB PhotonMappingRenderer::gamma(const RGB& rgb) {
     return glm::sqrt(rgb);
 }
 
-void PathTracerRenderer::renderTask(RGBA* pixels,
-                                    int width,
-                                    int height,
-                                    int off,
-                                    int step) {
+void PhotonMappingRenderer::renderTask(RGBA* pixels,
+                                       int width,
+                                       int height,
+                                       int off,
+                                       int step) {
     for (int i = off; i < height; i += step) {
         for (int j = 0; j < width; j++) {
-            Vec3 color{0, 0, 0};
+            Vec3 color1{0, 0, 0};
             for (int k = 0; k < samples; k++) {
                 auto r = defaultSamplerInstance<UniformInSquare>().sample2d();
                 float rx = r.x;
@@ -29,17 +33,20 @@ void PathTracerRenderer::renderTask(RGBA* pixels,
                 float x = (float(j) + rx) / float(width);
                 float y = (float(i) + ry) / float(height);
                 auto ray = camera.shoot(x, y);
-                color += trace(ray);
+                auto c = color(ray, 0);
+                //cout << std::format("{} {} {}", c.x, c.y, c.z) << endl;
+                color1 += c;
             }
-            color /= samples;
-            color = gamma(color);
-            pixels[(height - i - 1) * width + j] = {color, 1};
+            color1 /= samples;
+            color1 = gamma(color1);
+            pixels[(height - i - 1) * width + j] = {color1, 1};
         }
     }
 }
 
-auto PathTracerRenderer::render() -> RenderResult {
+auto PhotonMappingRenderer::render() -> RenderResult {
     // shaders
+    //map.testBalance();
     shaderPrograms.clear();
     ShaderCreator shaderCreator{};
     for (auto& m : scene.materials) {
@@ -59,14 +66,15 @@ auto PathTracerRenderer::render() -> RenderResult {
         auto duration = duration_cast<chrono::microseconds>(end - start);
         getServer().logger.log(std::format(
             "Done. Time: {}s", double(duration.count()) *
-                                    chrono::microseconds::period::num /
-                                    chrono::microseconds::period::den));
+                                   chrono::microseconds::period::num /
+                                   chrono::microseconds::period::den));
     }
-
+    genPhotonMap();
+    this->map.balance();
     const auto taskNums = 8;
     thread t[taskNums];
     for (int i = 0; i < taskNums; i++) {
-        t[i] = thread(&PathTracerRenderer::renderTask, this, pixels, width,
+        t[i] = thread(&PhotonMappingRenderer::renderTask, this, pixels, width,
                       height, i, taskNums);
     }
     for (int i = 0; i < taskNums; i++) {
@@ -76,17 +84,17 @@ auto PathTracerRenderer::render() -> RenderResult {
     return {pixels, width, height};
 }
 
-void PathTracerRenderer::release(const RenderResult& r) {
+void PhotonMappingRenderer::release(const RenderResult& r) {
     auto [p, w, h] = r;
     delete[] p;
 }
 
-HitRecord PathTracerRenderer::closestHitObject(const Ray& r) {
+HitRecord PhotonMappingRenderer::closestHitObject(const Ray& r) {
     HitRecord closestHit = nullopt;
     if (acc == RenderSettings::Acc::NONE) {
         float closest = FLOAT_INF;
         for (auto& s : scene.sphereBuffer) {
-            auto hitRecord = Intersection::xSphere(r, s, 0.001, closest);
+            auto hitRecord = Intersection::xSphere(r, s, 0.000001, closest);
             if (hitRecord && hitRecord->t < closest) {
                 closest = hitRecord->t;
                 closestHit = hitRecord;
@@ -111,7 +119,7 @@ HitRecord PathTracerRenderer::closestHitObject(const Ray& r) {
     return closestHit;
 }
 
-tuple<float, Vec3> PathTracerRenderer::closestHitLight(const Ray& r) {
+tuple<float, Vec3> PhotonMappingRenderer::closestHitLight(const Ray& r) {
     Vec3 v = {};
     HitRecord closest = getHitRecord(FLOAT_INF, {}, {}, {});
     for (auto& a : scene.areaLightBuffer) {
@@ -124,7 +132,7 @@ tuple<float, Vec3> PathTracerRenderer::closestHitLight(const Ray& r) {
     return {closest->t, v};
 }
 
-HitRecord PathTracerRenderer::sampleLight() const {
+HitRecord PhotonMappingRenderer::sampleLight() const {
     float emitAreaSum = 0;
     for (auto& a : scene.areaLightBuffer) {
         emitAreaSum += a.getArea();
@@ -146,8 +154,7 @@ HitRecord PathTracerRenderer::sampleLight() const {
 }
 
 inline void print(const std::string str, const Vec3& v) {
-    cout << str + ": " + std::format("{} {} {}", v.x, v.y, v.z) << endl;
-    //getServer().logger.log(str + ": " + std::format("{} {} {}", v.x, v.y, v.z));
+    getServer().logger.log(str + ": " + std::format("{} {} {}", v.x, v.y, v.z));
 }
 
 inline void print(const std::string str, const float& f) {
@@ -162,7 +169,7 @@ inline bool testEqual(const float& a, const float& b, float epsilon = 0.0005f) {
     return fabs(a - b) < epsilon;
 }
 
-RGB PathTracerRenderer::getAmbientColor(const Ray& r) {
+RGB PhotonMappingRenderer::getAmbientColor(const Ray& r) {
     if (scene.ambient.type == Ambient::Type::CONSTANT)
         return scene.ambient.constant;
     else if (scene.ambient.type == Ambient::Type::ENVIRONMENT_MAP) {
@@ -170,7 +177,124 @@ RGB PathTracerRenderer::getAmbientColor(const Ray& r) {
     }
 }
 
-RGB PathTracerRenderer::trace(const Ray& r) {
+tuple<Vec3, Vec3> PhotonMappingRenderer::genPhoton(AreaLight light) {
+    Vec2 random = defaultSamplerInstance<UniformInSquare>().sample2d();
+    Vec3 position = light.position + random.x * light.u + random.y * light.v;
+    Vec3 random3d = defaultSamplerInstance<HemiSphere>().sample3d();
+    Vec3 normal = light.getNormal();
+    Onb onb{normal};
+    Vec3 direction = glm::normalize(onb.local(random3d));
+    return make_tuple(position, direction);
+}
+
+void PhotonMappingRenderer::tracePhoton(const Ray& r, int depth, Vec3 power) {
+    auto hitObject = closestHitObject(r);
+    auto [t, emitted] = closestHitLight(r);
+    // hit object
+    if (hitObject && hitObject->t < t) {
+        if (depth < this->depth) {
+            auto mtlHandle = hitObject->material;
+            auto type = scene.materials[mtlHandle.index()].type;
+            if (type == 0) {
+                // only diffuse
+                Photon photon;
+                photon.position = hitObject.value().hitPoint;
+                photon.direction = r.direction;
+                photon.power = power * fabs(glm::dot(-r.direction,
+                                                     hitObject.value().normal));
+                map.addPhoton(photon);
+                float russianRoulette = scene.renderOption.russianRoulette;
+                if (defaultSamplerInstance<UniformSampler>().sample1d() <
+                    russianRoulette) {
+                    auto scattered = shaderPrograms[mtlHandle.index()]->shade(
+                        r, hitObject->hitPoint, hitObject->normal);
+                    auto scatteredRay = scattered.ray;
+                    auto attenuation = scattered.attenuation;
+                    float n_dot_in =
+                        glm::dot(hitObject->normal, scatteredRay.direction);
+                    float pdf = scattered.pdf;
+                    tracePhoton(
+                        scatteredRay, depth + 1,
+                        power * attenuation * fabs(n_dot_in) / russianRoulette);
+                }
+                return;
+            } else if (type == 2 || type == 3) {
+                // dielectric and metal
+                auto scattered = shaderPrograms[mtlHandle.index()]->shade(
+                    r, hitObject->hitPoint, hitObject->normal);
+                auto scatteredRay = scattered.ray;
+                auto attenuation = scattered.attenuation;
+                float n_dot_in =
+                    glm::dot(hitObject->normal, scatteredRay.direction);
+                if (defaultSamplerInstance<UniformSampler>().sample1d() <
+                    russianRoulette) {
+                    tracePhoton(
+                        scatteredRay, depth + 1,
+                        power * attenuation * fabs(n_dot_in) / russianRoulette);
+                }
+            }
+        }
+    } else if (t != FLOAT_INF) {
+        return;
+    } else {
+        return;
+    }
+}
+
+void PhotonMappingRenderer::genPhotonMap() {
+    Vec3 origin, direction, power;
+    float scale;
+    for (int i = 0; i < map.getMaxNum(); i++) {
+        // 先只有一个光
+        auto light = scene.areaLightBuffer[0];
+        auto [origin, direction] = genPhoton(light);
+        Ray r(origin, direction);
+        auto hitObject = closestHitObject(r);
+        if (!hitObject)
+            continue;
+        auto power = light.radiance / light.getMean();
+        float scale = glm::dot(hitObject.value().normal, -direction);
+        tracePhoton(r, 0, scale * power);
+    }
+}
+
+RGB PhotonMappingRenderer::color(const Ray& r, int depth) {
+    auto hitObject = closestHitObject(r);
+    auto [t, emitted] = closestHitLight(r);
+    // hit object
+    if (hitObject && hitObject->t < t) {
+        if (depth < this->depth) {
+            auto mtlHandle = hitObject->material;
+            auto type = scene.materials[mtlHandle.index()].type;
+            if (type == 0) {
+                // only diffuse
+                auto c =
+                    scene.materials[mtlHandle.index()]
+                        .getProperty<Property::Wrapper::RGBType>("diffuseColor")
+                        .value()
+                        .value;
+                auto ir = map.getIrradiance(hitObject.value().hitPoint,
+                                            hitObject.value().normal, 0.6, 100);
+                ir = clamp(ir);
+                return {c.x * ir.x, c.y * ir.y, c.z * ir.z};
+            } else if (type == 2 || type == 3) {
+                auto scattered = shaderPrograms[mtlHandle.index()]->shade(
+                    r, hitObject->hitPoint, hitObject->normal);
+                auto ray = scattered.ray;
+                auto attenuation = scattered.attenuation;
+                auto c = color(ray, depth + 1);
+                return {attenuation.x * c.x, attenuation.y * c.y,
+                        attenuation.z * c.z};
+            }
+        }
+    } else if (t != FLOAT_INF) {
+        return emitted;
+    } else {
+        return Vec3{0};
+    }
+}
+
+RGB PhotonMappingRenderer::trace(const Ray& r) {
     auto hitObject = closestHitObject(r);
     auto [t, emitted] = closestHitLight(r);
     // hit object
@@ -238,6 +362,7 @@ RGB PathTracerRenderer::trace(const Ray& r) {
                 //print("n_dot_in", n_dot_in);
                 if (defaultSamplerInstance<UniformSampler>().sample1d() <
                     russianRoulette) {
+                    cout << 1 << endl;
                     auto res = attenuation * trace(ray) * fabs(n_dot_in) /
                                russianRoulette;
                     return res;
@@ -251,4 +376,4 @@ RGB PathTracerRenderer::trace(const Ray& r) {
         return Vec3{0};
     }
 }
-}  // namespace PathTracer
+}  // namespace PhotonMapping
