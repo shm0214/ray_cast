@@ -6,11 +6,12 @@
 
 namespace PathTracer {
 class metal : public Shader {
+    //光滑金属的fuzz为0
    private:
     Vec3 albedo;
-
+    float fuzz;
    public:
-    metal(Material& material, vector<Texture>& textures);
+    metal(Material& material, vector<Texture>& textures,double fuzz);
     Scattered shade(const Ray& ray,
                     const Vec3& hitPoint,
                     const Vec3& normal) const;

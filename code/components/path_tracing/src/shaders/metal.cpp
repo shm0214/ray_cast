@@ -5,19 +5,22 @@
 
 namespace PathTracer {
 
-metal::metal(Material& material, vector<Texture>& textures)
-    : Shader(material, textures) {
+metal::metal(Material& material, vector<Texture>& textures,double fuzz)
+    : Shader(material, textures), fuzz(fuzz < 1 ? fuzz : 1) {
     auto diffuseColor =
-        material.getProperty<Property::Wrapper::RGBType>("diffuseColor");
+        material.getProperty<Property::Wrapper::RGBType>("Titanum");
     if (diffuseColor)
         albedo = (*diffuseColor).value;
     else
-        albedo = {0.8, 0.8, 0.8};
+        albedo = {0.542, 0.497, 0.449};
+
+
 }
 Scattered metal::shade(const Ray& ray,
                             const Vec3& hitPoint,
                             const Vec3& normal) const {
     Vec3 origin = hitPoint;
+    Vec3 random = defaultSamplerInstance<HemiSphere>().sample3d();
     // if (normal == Vec3{0, 0, 1}) {
     //     direction = random;
     // }
@@ -33,10 +36,11 @@ Scattered metal::shade(const Ray& ray,
     // }
     // direction = glm::normalize(direction);
 
-   /* Onb onb{normal};
-    Vec3 direction = glm::normalize(onb.local(random));*/
+    Onb onb{normal};
+    Vec3 fuzzdirection = glm::normalize(onb.local(random));
     //反射光线的方向等于入射光线方向+2b
     Vec3 direction = ray.direction - 2*glm::dot(ray.direction, normal)*normal;
+    direction = direction + fuzz*fuzzdirection;
     float pdf = 1 / (2 * PI);
     auto attenuation = albedo / PI;
     return {Ray{origin, direction}, attenuation, Vec3{0}, pdf};
